@@ -166,7 +166,7 @@ If you use Aerial+ in your work, please cite our paper as below:
   series     = {Proceedings of Machine Learning Research},
   month      = {September},
   publisher  = {PMLR},
-  url        = 	 {https://proceedings.mlr.press/v284/karabulut25a.html},
+  url        = {https://proceedings.mlr.press/v284/karabulut25a.html},
 }
 ```
 
