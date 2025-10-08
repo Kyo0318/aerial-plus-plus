@@ -156,7 +156,7 @@ If you use Aerial+ in your work, please cite our paper as below:
 
 ```
 @InProceedings{pmlr-v284-karabulut25a,
-  title      = Neurosymbolic Association Rule Mining from Tabular Data},
+  title      = {Neurosymbolic Association Rule Mining from Tabular Data},
   author     = {Karabulut, Erkan and Groth, Paul and Degeler, Victoria},
   booktitle  = {Proceedings of The 19th International Conference on Neurosymbolic Learning and Reasoning},
   pages      = {565--588},
