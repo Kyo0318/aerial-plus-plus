@@ -150,7 +150,7 @@ which can also be changed with a configuration file as we have done with [`confi
 The `AerialPlus` class can easily be integrated with another code base together with its `Autoencoder` implementation (or others),
 by copying the entire class `AerialPlus` and `Autoencoder` class and can be run with any dataset in the form of transactions.
 
-## Cite
+## Citation
 
 If you use Aerial+ in your work, please cite our paper as below:
 
