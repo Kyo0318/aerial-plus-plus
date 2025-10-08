@@ -1,8 +1,8 @@
 # Aerial+: Neurosymbolic Association Rule Mining from Tabular Data
 
 This repository contains the source code of the experiments for Aerial+ neurosymbolic Association Rule Mining (ARM)
-method and the baselines, as described in the paper entitled "_Neurosymbolic Association Rule Mining from Tabular
-Data_".
+method and the baselines, as described in the paper entitled "[_Neurosymbolic Association Rule Mining from Tabular
+Data_](https://proceedings.mlr.press/v284/karabulut25a.html)".
 
 This document is a brief guideline describing Aerial+, datasets and the baselines used in the experiments
 and how to run the experiments
@@ -23,7 +23,8 @@ Please also see the Python library of Aerial+ (PyAerial): [https://github.com/Di
 4. [Code structure](#code-structure)
 5. [How to run?](#how-to-run)
 6. [How to reuse?](#how-to-reuse)
-7. [References](#references)
+7. [Citation](#citation)
+8. [References](#references)
 
 ## About
 
@@ -148,6 +149,27 @@ which can also be changed with a configuration file as we have done with [`confi
 
 The `AerialPlus` class can easily be integrated with another code base together with its `Autoencoder` implementation (or others),
 by copying the entire class `AerialPlus` and `Autoencoder` class and can be run with any dataset in the form of transactions.
+
+## Cite
+
+If you use Aerial+ in your work, please cite our paper as below:
+
+```
+@InProceedings{pmlr-v284-karabulut25a,
+  title      = Neurosymbolic Association Rule Mining from Tabular Data},
+  author     = {Karabulut, Erkan and Groth, Paul and Degeler, Victoria},
+  booktitle  = {Proceedings of The 19th International Conference on Neurosymbolic Learning and Reasoning},
+  pages      = {565--588},
+  year       = {2025},
+  editor     = {H. Gilpin, Leilani and Giunchiglia, Eleonora and Hitzler, Pascal and van Krieken, Emile},
+  volume     = {284},
+  series     = {Proceedings of Machine Learning Research},
+  month      = {September},
+  publisher  = {PMLR},
+  url        = 	 {https://proceedings.mlr.press/v284/karabulut25a.html},
+}
+```
+
 
 ## References
 
