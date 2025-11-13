@@ -58,7 +58,7 @@ class AerialPlus:
             vector_tracker.extend([f"{feature}__{value}" for value in values])
             start = end
 
-        # Map tracker entries to indices for fast lookup
+        # Map tracker entries to indices for fast lookup (辞書キャッシュ)
         tracker_index_map = {key: idx for idx, key in enumerate(vector_tracker)}
 
         # Preallocate vector list
@@ -88,6 +88,7 @@ class AerialPlus:
         self.input_vectors = {
             "vector_list": vector_list.tolist(),
             "vector_tracker_list": vector_tracker,
+            "vector_tracker_index_map": tracker_index_map,  # O(1)ルックアップ用の辞書キャッシュ
             "feature_value_indices": feature_value_indices,
         }
 
@@ -297,6 +298,7 @@ class AerialPlus:
         :return: Updated rules with support and confidence.
         """
         num_transactions = len(transactions)
+        tracker_index_map = self.input_vectors['vector_tracker_index_map']  # O(1)辞書キャッシュ
 
         def process_rule(rule):
             ant_count = 0
@@ -306,12 +308,12 @@ class AerialPlus:
             for index in range(len(self.input_vectors['vector_list'])):
                 encoded_transaction = self.input_vectors['vector_list'][index]
                 antecedent_match = all(
-                    encoded_transaction[self.input_vectors['vector_tracker_list'].index(antecedent)] == 1
+                    encoded_transaction[tracker_index_map[antecedent]] == 1
                     for antecedent in rule['antecedents']
                 )
                 if antecedent_match:
                     ant_count += 1
-                if encoded_transaction[self.input_vectors['vector_tracker_list'].index(rule['consequent'])] == 1:
+                if encoded_transaction[tracker_index_map[rule['consequent']]] == 1:
                     cons_count += 1
                     if antecedent_match:
                         co_occurrence_count += 1
@@ -351,13 +353,13 @@ class AerialPlus:
         """
         num_transactions = len(transactions)
         vector_list = np.array(self.input_vectors['vector_list'])
-        vector_tracker_list = self.input_vectors['vector_tracker_list']
+        tracker_index_map = self.input_vectors['vector_tracker_index_map']  # O(1)辞書キャッシュ
 
         dataset_coverage = np.zeros(num_transactions, dtype=bool)
 
         def process_rule(rule):
-            antecedents_indices = [vector_tracker_list.index(ant) for ant in rule['antecedents']]
-            consequent_index = vector_tracker_list.index(rule['consequent'])
+            antecedents_indices = [tracker_index_map[ant] for ant in rule['antecedents']]
+            consequent_index = tracker_index_map[rule['consequent']]
 
             # Find transactions where all antecedents are present
             antecedent_matches = np.all(vector_list[:, antecedents_indices] == 1, axis=1)
