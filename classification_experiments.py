@@ -145,7 +145,23 @@ def test_on_corels(dataset, class_label, categories, algorithm):
 
     fpgrowth = ClassicARM(min_support=config.MIN_SUPPORT, min_confidence=config.MIN_CONFIDENCE, algorithm="fpgrowth")
     aerial_plus = AerialPlus(ant_similarity=config.ANTECEDENT_SIMILARITY, cons_similarity=config.CONSEQUENT_SIMILARITY,
-                             max_antecedents=config.MAX_ANTECEDENT)
+                             max_antecedents=config.MAX_ANTECEDENT, noise_factor=config.NOISE_FACTOR)
+    
+    # ハイパーパラメータ自動調整（最初のfoldで実行し、全foldで共有）
+    if algorithm == "aerial_plus" and config.ENABLE_AUTO_TUNING:
+        print("[CORELS] ハイパーパラメータ自動調整を実行中（全foldで共有）...")
+        tuning_result = aerial_plus.tune_hyperparameters(
+            X,  # 全データで最適化
+            n_trials=config.TUNING_TRIALS,
+            optimization_metric=config.TUNING_METRIC,
+            lr=config.LEARNING_RATE,
+            epochs=config.EPOCHS,
+            batch_size=config.BATCH_SIZE,
+            verbose=False
+        )
+        print(f"[CORELS] 最適化完了: noise_factor={aerial_plus.noise_factor:.4f}, "
+              f"cons_similarity={aerial_plus.cons_similarity:.4f}, "
+              f"ant_similarity={aerial_plus.ant_similarity:.4f}")
 
     stats = []
     stratified_kfold = StratifiedKFold(n_splits=10, shuffle=True, random_state=2)
@@ -196,13 +212,13 @@ if __name__ == '__main__':
     datasets = get_datasets()
     for (dataset, class_label, categories) in datasets:
         print("[STARTED] Building classifiers for", dataset.metadata.name, "dataset ...")
-        algorithm = "fpgrowth"
-        print("[CBA] Running the CBA algorithm with FP-Growth.")
-        test_on_cba(dataset, class_label, categories, algorithm)
-        print("[CORELS] Running the CORELS algorithm with FP-Growth.")
-        test_on_corels(dataset, class_label, categories, algorithm)
-        print("[BRL] Running the BRL algorithm with FP-Growth.")
-        test_on_brl(dataset, class_label, categories, algorithm)
+        # algorithm = "fpgrowth"
+        # print("[CBA] Running the CBA algorithm with FP-Growth.")
+        # test_on_cba(dataset, class_label, categories, algorithm)
+        # print("[CORELS] Running the CORELS algorithm with FP-Growth.")
+        # test_on_corels(dataset, class_label, categories, algorithm)
+        # print("[BRL] Running the BRL algorithm with FP-Growth.")
+        # test_on_brl(dataset, class_label, categories, algorithm)
         algorithm = "aerial_plus"
         print("[CBA] Running the CBA algorithm with Aerial+.")
         test_on_cba(dataset, class_label, categories, algorithm)

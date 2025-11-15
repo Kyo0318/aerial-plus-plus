@@ -82,8 +82,24 @@ def generateCARs(transactionDB, algorithm="aerial_plus", target_class=None, supp
     if algorithm == "aerial_plus":
         aerial_plus_input = transactiondb_to_dataframe(transactionDB)
         aerial_plus = AerialPlus(ant_similarity=config.ANTECEDENT_SIMILARITY,
-                                 cons_similarity=config.CONSEQUENT_SIMILARITY, max_antecedents=config.MAX_ANTECEDENT)
-        aerial_plus.create_input_vectors(aerial_plus_input)
+                                 cons_similarity=config.CONSEQUENT_SIMILARITY, 
+                                 max_antecedents=config.MAX_ANTECEDENT,
+                                 noise_factor=config.NOISE_FACTOR)
+        
+        # ハイパーパラメータ自動調整
+        if config.ENABLE_AUTO_TUNING:
+            aerial_plus.tune_hyperparameters(
+                aerial_plus_input,
+                n_trials=config.TUNING_TRIALS,
+                optimization_metric=config.TUNING_METRIC,
+                lr=config.LEARNING_RATE,
+                epochs=config.EPOCHS,
+                batch_size=config.BATCH_SIZE,
+                verbose=False
+            )
+        else:
+            aerial_plus.create_input_vectors(aerial_plus_input)
+        
         # MLxtend's FP-Growth does not support constraint itemset mining while aerial_plus does (with target_class
         # parameter. For fairness, we run both method without itemset constraint mining option and compare the
         # execution times.
@@ -100,6 +116,9 @@ def generateCARs(transactionDB, algorithm="aerial_plus", target_class=None, supp
         exec_time = aerial_plus_training_time + ae_exec_time
         if rules:
             rules = aerial_plus_to_cba(rules)
+        else:
+            # ルールが生成されなかった場合は空のリストを返す
+            rules = []
     else:
         fpgrowth = ClassicARM(min_support=0.3, min_confidence=0.8, algorithm="fpgrowth")
         fpgrowth_input = prepare_classic_arm_input(transactiondb_to_dataframe(transactionDB))
@@ -200,8 +219,25 @@ def top_rules(transactions,
         # top rules function is not used in the Aerial+ experiments, see generateCARs function above
         if algorithm == "aerial_plus":
             aerial_plus_input = transactiondb_to_dataframe(transactions)
-            aerial_plus = AerialPlus(noise_factor=0.5, max_antecedents=config.MAX_ANTECEDENT)
-            aerial_plus.create_input_vectors(aerial_plus_input)
+            aerial_plus = AerialPlus(ant_similarity=config.ANTECEDENT_SIMILARITY,
+                                     cons_similarity=config.CONSEQUENT_SIMILARITY,
+                                     max_antecedents=config.MAX_ANTECEDENT,
+                                     noise_factor=config.NOISE_FACTOR)
+            
+            # ハイパーパラメータ自動調整
+            if config.ENABLE_AUTO_TUNING:
+                aerial_plus.tune_hyperparameters(
+                    aerial_plus_input,
+                    n_trials=config.TUNING_TRIALS,
+                    optimization_metric=config.TUNING_METRIC,
+                    lr=config.LEARNING_RATE,
+                    epochs=config.EPOCHS,
+                    batch_size=config.BATCH_SIZE,
+                    verbose=False
+                )
+            else:
+                aerial_plus.create_input_vectors(aerial_plus_input)
+            
             aerial_plus_training_time = aerial_plus.train(lr=config.LEARNING_RATE, epochs=config.EPOCHS,
                                                           batch_size=config.BATCH_SIZE)
             rules_current, ae_exec_time = aerial_plus.generate_rules(target_class=target_class)

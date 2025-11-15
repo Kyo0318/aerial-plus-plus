@@ -153,8 +153,29 @@ class BayesianRuleListClassifier(BaseEstimator, RuleList, ClassifierMixin):
         if algorithm == "aerial_plus":
             aerial_plus = AerialPlus(ant_similarity=config.ANTECEDENT_SIMILARITY,
                                      cons_similarity=config.CONSEQUENT_SIMILARITY,
-                                     max_antecedents=config.MAX_ANTECEDENT)
-            aerial_plus.create_input_vectors(X_nonencoded)
+                                     max_antecedents=config.MAX_ANTECEDENT,
+                                     noise_factor=config.NOISE_FACTOR)
+            
+            # ハイパーパラメータ自動調整
+            if config.ENABLE_AUTO_TUNING:
+                if verbose:
+                    print("[BRL] ハイパーパラメータ自動調整を実行中...")
+                aerial_plus.tune_hyperparameters(
+                    X_nonencoded,
+                    n_trials=config.TUNING_TRIALS,
+                    optimization_metric=config.TUNING_METRIC,
+                    lr=config.LEARNING_RATE,
+                    epochs=config.EPOCHS,
+                    batch_size=config.BATCH_SIZE,
+                    verbose=False
+                )
+                if verbose:
+                    print(f"[BRL] 最適化完了: noise_factor={aerial_plus.noise_factor:.4f}, "
+                          f"cons_similarity={aerial_plus.cons_similarity:.4f}, "
+                          f"ant_similarity={aerial_plus.ant_similarity:.4f}")
+            else:
+                aerial_plus.create_input_vectors(X_nonencoded)
+            
             aerial_plus_training_time = aerial_plus.train(epochs=config.EPOCHS, lr=config.LEARNING_RATE,
                                                           batch_size=config.BATCH_SIZE)
             itemsets, ae_exec_time = aerial_plus.generate_frequent_itemsets()
