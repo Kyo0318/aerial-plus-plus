@@ -1,6 +1,7 @@
 import concurrent
 import time
 import torch
+import optuna
 
 from itertools import combinations
 from torch import nn
@@ -18,6 +19,20 @@ import numpy as np
 class AerialPlus:
     """
     Neurosymbolic association rule mining from tabular data
+    
+    ハイパーパラメータ自動調整機能:
+    - tune_hyperparameters()メソッドでベイズ最適化による自動調整が可能
+    - 最適化対象: noise_factor, cons_similarity, ant_similarity
+    - 最適化指標: f1_score, support, confidence, coverage, balanced
+    
+    使用例:
+        aerial = AerialPlus()
+        aerial.tune_hyperparameters(
+            transactions=df,
+            n_trials=50,
+            optimization_metric='f1_score'
+        )
+        # 自動的に最適なパラメータが適用されます
     """
 
     def __init__(self, noise_factor=0.5, cons_similarity=0.8, ant_similarity=0.5, max_antecedents=2):
@@ -452,3 +467,133 @@ class AerialPlus:
 
         training_time = time.time() - training_start_time
         return training_time
+
+    def tune_hyperparameters(self, transactions, n_trials=50, optimization_metric='f1_score', 
+                            lr=5e-3, epochs=1, batch_size=2, verbose=False):
+        """
+        ベイズ最適化によるハイパーパラメータの自動調整
+        
+        @param transactions: pandas DataFrame of transactions
+        @param n_trials: Optunaの試行回数
+        @param optimization_metric: 最適化する指標 ('f1_score', 'support', 'confidence', 'coverage', 'balanced')
+        @param lr: AutoEncoderの学習率
+        @param epochs: AutoEncoderのエポック数
+        @param batch_size: AutoEncoderのバッチサイズ
+        @param verbose: 詳細ログの表示
+        @return: 最適なハイパーパラメータとその結果
+        """
+        print("=" * 60)
+        print("ハイパーパラメータ自動調整を開始します...")
+        print(f"最適化指標: {optimization_metric}")
+        print(f"試行回数: {n_trials}")
+        print("=" * 60)
+        
+        # 一度だけ入力ベクトルを作成
+        self.create_input_vectors(transactions)
+        
+        def objective(trial):
+            """Optunaの目的関数"""
+            # ハイパーパラメータの探索範囲を定義
+            noise_factor = trial.suggest_float('noise_factor', 0.1, 1.0)
+            cons_similarity = trial.suggest_float('cons_similarity', 0.5, 0.95)
+            ant_similarity = trial.suggest_float('ant_similarity', 0.05, 0.5)
+            
+            # パラメータを一時的に設定
+            original_noise = self.noise_factor
+            original_cons = self.cons_similarity
+            original_ant = self.ant_similarity
+            
+            self.noise_factor = noise_factor
+            self.cons_similarity = cons_similarity
+            self.ant_similarity = ant_similarity
+            
+            try:
+                # モデルをトレーニング
+                self.train(lr=lr, epochs=epochs, batch_size=batch_size)
+                
+                # ルールを生成
+                association_rules, exec_time = self.generate_rules()
+                
+                if not association_rules or len(association_rules) == 0:
+                    # ルールが生成されなかった場合は最悪のスコアを返す
+                    return 0.0
+                
+                # ルール品質を計算
+                result = self.calculate_stats(association_rules, transactions, exec_time)
+                
+                if result is None:
+                    return 0.0
+                
+                stats, rules = result
+                rule_count, exec_time, support, confidence, coverage = stats
+                
+                # 最適化指標に基づいてスコアを計算
+                if optimization_metric == 'f1_score':
+                    # F1スコア的なバランス指標（support、confidence、coverageの調和平均）
+                    if support > 0 and confidence > 0 and coverage > 0:
+                        score = 3 / (1/support + 1/confidence + 1/coverage)
+                    else:
+                        score = 0.0
+                elif optimization_metric == 'support':
+                    score = support
+                elif optimization_metric == 'confidence':
+                    score = confidence
+                elif optimization_metric == 'coverage':
+                    score = coverage
+                elif optimization_metric == 'balanced':
+                    # 重み付き線形和
+                    score = 0.3 * support + 0.4 * confidence + 0.3 * coverage
+                else:
+                    # デフォルトはf1_score
+                    if support > 0 and confidence > 0 and coverage > 0:
+                        score = 3 / (1/support + 1/confidence + 1/coverage)
+                    else:
+                        score = 0.0
+                
+                if verbose:
+                    print(f"Trial {trial.number}: score={score:.4f}, "
+                          f"noise={noise_factor:.3f}, cons={cons_similarity:.3f}, "
+                          f"ant={ant_similarity:.3f}, rules={rule_count}")
+                
+                return score
+                
+            except Exception as e:
+                if verbose:
+                    print(f"Trial {trial.number} failed: {str(e)}")
+                return 0.0
+            finally:
+                # パラメータを元に戻す
+                self.noise_factor = original_noise
+                self.cons_similarity = original_cons
+                self.ant_similarity = original_ant
+        
+        # Optunaでの最適化（ログを抑制）
+        optuna.logging.set_verbosity(optuna.logging.WARNING)
+        study = optuna.create_study(direction='maximize', 
+                                    sampler=optuna.samplers.TPESampler(seed=42))
+        study.optimize(objective, n_trials=n_trials, show_progress_bar=True)
+        
+        # 最適なパラメータを取得
+        best_params = study.best_params
+        best_score = study.best_value
+        
+        print("\n" + "=" * 60)
+        print("ハイパーパラメータ自動調整が完了しました！")
+        print("=" * 60)
+        print(f"最適スコア: {best_score:.4f}")
+        print(f"最適なnoise_factor: {best_params['noise_factor']:.4f}")
+        print(f"最適なcons_similarity: {best_params['cons_similarity']:.4f}")
+        print(f"最適なant_similarity: {best_params['ant_similarity']:.4f}")
+        print("=" * 60)
+        
+        # 最適なパラメータを適用
+        self.noise_factor = best_params['noise_factor']
+        self.cons_similarity = best_params['cons_similarity']
+        self.ant_similarity = best_params['ant_similarity']
+        
+        return {
+            'best_params': best_params,
+            'best_score': best_score,
+            'study': study,
+            'all_trials': study.trials
+        }
