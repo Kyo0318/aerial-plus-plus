@@ -3,6 +3,7 @@ This script runs rule quality experiments for Aerial+ and the baselines
 Check out the config.py for the parameters of each algorithm before running
 """
 import csv
+import time
 import warnings
 import config
 
@@ -148,13 +149,42 @@ if __name__ == "__main__":
         print_stats(fss_stats, "Fish School Search Algorithm")
 
         # aerial_plus+ (2025)
+        print("[計測] Aerial+ 実行開始...")
+        aerial_plus_overall_start = time.time()
+        
+        # Phase 1: データ前処理
+        create_vectors_start = time.time()
         aerial_plus.create_input_vectors(dataset.data.features)
+        create_vectors_time = time.time() - create_vectors_start
+        print(f"[計測] Phase 1 - create_input_vectors: {create_vectors_time:.4f}秒")
+        
+        # Phase 2: Autoencoder訓練
+        train_start = time.time()
         aerial_plus_training_time = aerial_plus.train(lr=config.LEARNING_RATE, epochs=config.EPOCHS,
                                                       batch_size=config.BATCH_SIZE)
+        actual_train_time = time.time() - train_start
+        print(f"[計測] Phase 2 - train: {actual_train_time:.4f}秒 (内部計測: {aerial_plus_training_time:.4f}秒)")
+        
+        # Phase 3: ルール生成
+        generate_start = time.time()
         aerial_plus_association_rules, ae_exec_time = aerial_plus.generate_rules()
+        actual_generate_time = time.time() - generate_start
+        print(f"[計測] Phase 3 - generate_rules: {actual_generate_time:.4f}秒 (内部計測: {ae_exec_time:.4f}秒) | 生成ルール数: {len(aerial_plus_association_rules)}")
+        
+        # Phase 4: 統計計算
+        stats_start = time.time()
         aerial_plus_stats, aerial_plus_rules = aerial_plus.calculate_stats(aerial_plus_association_rules,
                                                                            classical_arm_input,
                                                                            aerial_plus_training_time + ae_exec_time)
+        actual_stats_time = time.time() - stats_start
+        print(f"[計測] Phase 4 - calculate_stats: {actual_stats_time:.4f}秒 (calculate_stats内で詳細計測)")
+        
+        # 全体時間
+        aerial_plus_overall_time = time.time() - aerial_plus_overall_start
+        print(f"[計測] ★ Aerial+ 全体実行時間: {aerial_plus_overall_time:.4f}秒")
+        print(f"[計測] 内訳 - Phase1: {create_vectors_time:.4f}s | Phase2: {actual_train_time:.4f}s | Phase3: {actual_generate_time:.4f}s | Phase4: {actual_stats_time:.4f}s")
+        print(f"[計測] 合計: {create_vectors_time + actual_train_time + actual_generate_time + actual_stats_time:.4f}秒")
+        
         if aerial_plus_stats:
             results[dataset.metadata.name]["aerial_plus"]["stats"].append(aerial_plus_stats)
             results[dataset.metadata.name]["aerial_plus"]["rules"] = aerial_plus_association_rules

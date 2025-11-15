@@ -297,6 +297,9 @@ class AerialPlus:
         :param transactions: List of transactions.
         :return: Updated rules with support and confidence.
         """
+        # 計測開始
+        start_time = time.time()
+        
         num_transactions = len(transactions)
         tracker_index_map = self.input_vectors['vector_tracker_index_map']  # O(1)辞書キャッシュ
 
@@ -328,6 +331,11 @@ class AerialPlus:
         with ThreadPoolExecutor(max_workers=10) as executor:
             rules = list(executor.map(process_rule, rules))
 
+        # 計測終了とログ出力
+        elapsed_time = time.time() - start_time
+        vector_tracker_size = len(self.input_vectors['vector_tracker_list'])
+        print(f"[計測] calculate_basic_stats: {elapsed_time:.4f}秒 | ルール数: {len(rules) if rules else 0} | トランザクション数: {num_transactions} | vector_tracker_list長: {vector_tracker_size}")
+
         return rules if rules else None
 
     @staticmethod
@@ -351,6 +359,9 @@ class AerialPlus:
         """
         Calculate rule quality stats for the given set of rules based on the input transactions.
         """
+        # 計測開始
+        start_time = time.time()
+        
         num_transactions = len(transactions)
         vector_list = np.array(self.input_vectors['vector_list'])
         tracker_index_map = self.input_vectors['vector_tracker_index_map']  # O(1)辞書キャッシュ
@@ -391,6 +402,11 @@ class AerialPlus:
 
         stats = calculate_average_rule_quality(updated_rules)
         stats["coverage"] = np.sum(dataset_coverage) / num_transactions
+
+        # 計測終了とログ出力
+        elapsed_time = time.time() - start_time
+        vector_tracker_size = len(self.input_vectors['vector_tracker_list'])
+        print(f"[計測] calculate_stats: {elapsed_time:.4f}秒 | ルール数: {len(updated_rules)} | トランザクション数: {num_transactions} | vector_tracker_list長: {vector_tracker_size}")
 
         return [len(updated_rules), exec_time, stats['support'], stats["confidence"], stats["coverage"]], updated_rules
 
