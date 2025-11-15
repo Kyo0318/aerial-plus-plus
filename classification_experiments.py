@@ -160,8 +160,26 @@ def test_on_corels(dataset, class_label, categories, algorithm):
 
         if algorithm == "aerial_plus":
             aerial_plus.create_input_vectors(X_train)
-            aerial_plus_training_time = aerial_plus.train(lr=config.LEARNING_RATE, epochs=config.EPOCHS,
-                                                          batch_size=config.BATCH_SIZE)
+            aerial_plus_training_time = aerial_plus.train(
+                lr=config.LEARNING_RATE, 
+                epochs=config.EPOCHS,
+                batch_size=config.BATCH_SIZE,
+                use_early_stopping=config.USE_EARLY_STOPPING,
+                early_stopping_patience=config.EARLY_STOPPING_PATIENCE,
+                early_stopping_min_delta=config.EARLY_STOPPING_MIN_DELTA,
+                use_lr_scheduler=config.USE_LR_SCHEDULER,
+                lr_scheduler_type=config.LR_SCHEDULER_TYPE,
+                lr_scheduler_factor=config.LR_SCHEDULER_FACTOR,
+                lr_scheduler_patience=config.LR_SCHEDULER_PATIENCE,
+                lr_scheduler_step_size=config.LR_SCHEDULER_STEP_SIZE,
+                lr_scheduler_min_lr=config.LR_SCHEDULER_MIN_LR,
+                use_adaptive_batch_size=config.USE_ADAPTIVE_BATCH_SIZE,
+                adaptive_batch_size_start=config.ADAPTIVE_BATCH_SIZE_START,
+                adaptive_batch_size_max=config.ADAPTIVE_BATCH_SIZE_MAX,
+                adaptive_batch_size_increase_interval=config.ADAPTIVE_BATCH_SIZE_INCREASE_INTERVAL,
+                save_training_history=config.SAVE_TRAINING_HISTORY,
+                training_history_path=f"{config.TRAINING_HISTORY_PATH}/{dataset.metadata.name}_corels_fold{fold}"
+            )
             freq_items, ae_exec_time = aerial_plus.generate_frequent_itemsets()
             freq_items_time = aerial_plus_training_time + ae_exec_time
             freq_items, mean_support = aerial_plus.calculate_freq_item_support(freq_items, X_train)

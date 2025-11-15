@@ -155,8 +155,25 @@ class BayesianRuleListClassifier(BaseEstimator, RuleList, ClassifierMixin):
                                      cons_similarity=config.CONSEQUENT_SIMILARITY,
                                      max_antecedents=config.MAX_ANTECEDENT)
             aerial_plus.create_input_vectors(X_nonencoded)
-            aerial_plus_training_time = aerial_plus.train(epochs=config.EPOCHS, lr=config.LEARNING_RATE,
-                                                          batch_size=config.BATCH_SIZE)
+            aerial_plus_training_time = aerial_plus.train(
+                epochs=config.EPOCHS, 
+                lr=config.LEARNING_RATE,
+                batch_size=config.BATCH_SIZE,
+                use_early_stopping=config.USE_EARLY_STOPPING,
+                early_stopping_patience=config.EARLY_STOPPING_PATIENCE,
+                early_stopping_min_delta=config.EARLY_STOPPING_MIN_DELTA,
+                use_lr_scheduler=config.USE_LR_SCHEDULER,
+                lr_scheduler_type=config.LR_SCHEDULER_TYPE,
+                lr_scheduler_factor=config.LR_SCHEDULER_FACTOR,
+                lr_scheduler_patience=config.LR_SCHEDULER_PATIENCE,
+                lr_scheduler_step_size=config.LR_SCHEDULER_STEP_SIZE,
+                lr_scheduler_min_lr=config.LR_SCHEDULER_MIN_LR,
+                use_adaptive_batch_size=config.USE_ADAPTIVE_BATCH_SIZE,
+                adaptive_batch_size_start=config.ADAPTIVE_BATCH_SIZE_START,
+                adaptive_batch_size_max=config.ADAPTIVE_BATCH_SIZE_MAX,
+                adaptive_batch_size_increase_interval=config.ADAPTIVE_BATCH_SIZE_INCREASE_INTERVAL,
+                save_training_history=False  # BRL内部では訓練履歴を保存しない
+            )
             itemsets, ae_exec_time = aerial_plus.generate_frequent_itemsets()
             # imodels implementation of the BRL uses X_# format to name the columns, with 1 underscore
             # aerial_plus only uses {key}__{value} format to encode column names.
