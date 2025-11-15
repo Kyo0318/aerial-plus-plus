@@ -39,6 +39,11 @@ def print_parameters():
     print("Algorithm parameters:\n")
     print("Aerial+: Antecedent similarity:", config.ANTECEDENT_SIMILARITY)
     print("Aerial+: Consequent similarity:", config.CONSEQUENT_SIMILARITY)
+    print("Aerial+: Noise factor:", config.NOISE_FACTOR)
+    print("Aerial+: Auto-tuning enabled:", config.ENABLE_AUTO_TUNING)
+    if config.ENABLE_AUTO_TUNING:
+        print("Aerial+: Tuning trials:", config.TUNING_TRIALS)
+        print("Aerial+: Tuning metric:", config.TUNING_METRIC)
     print("Exhaustive: Minimum support:", config.MIN_SUPPORT)
     print("Exhaustive: Minimum confidence:", config.MIN_CONFIDENCE)
     print("Optimization-based: Population size:", config.POPULATION_SIZE)
@@ -93,7 +98,7 @@ if __name__ == "__main__":
     hmine = ClassicARM(min_support=config.MIN_SUPPORT, min_confidence=config.MIN_CONFIDENCE, algorithm="hmine")
 
     aerial_plus = AerialPlus(max_antecedents=config.MAX_ANTECEDENT, ant_similarity=config.ANTECEDENT_SIMILARITY,
-                             cons_similarity=config.CONSEQUENT_SIMILARITY)
+                             cons_similarity=config.CONSEQUENT_SIMILARITY, noise_factor=config.NOISE_FACTOR)
     sc = OptimizationARM(SineCosineAlgorithm(config.POPULATION_SIZE), max_evals=config.MAX_EVALS)
     gwo = OptimizationARM(GreyWolfOptimizer(config.POPULATION_SIZE), max_evals=config.MAX_EVALS)
     bat = OptimizationARM(BatAlgorithm(config.POPULATION_SIZE), max_evals=config.MAX_EVALS)
@@ -148,7 +153,24 @@ if __name__ == "__main__":
         print_stats(fss_stats, "Fish School Search Algorithm")
 
         # aerial_plus+ (2025)
-        aerial_plus.create_input_vectors(dataset.data.features)
+        # ハイパーパラメータ自動調整が有効な場合は最適化を実行
+        if config.ENABLE_AUTO_TUNING:
+            print("\nAerial+: ハイパーパラメータ自動調整を実行中...")
+            tuning_result = aerial_plus.tune_hyperparameters(
+                dataset.data.features,
+                n_trials=config.TUNING_TRIALS,
+                optimization_metric=config.TUNING_METRIC,
+                lr=config.LEARNING_RATE,
+                epochs=config.EPOCHS,
+                batch_size=config.BATCH_SIZE,
+                verbose=False
+            )
+            print(f"最適化完了: noise_factor={aerial_plus.noise_factor:.4f}, "
+                  f"cons_similarity={aerial_plus.cons_similarity:.4f}, "
+                  f"ant_similarity={aerial_plus.ant_similarity:.4f}\n")
+        else:
+            aerial_plus.create_input_vectors(dataset.data.features)
+        
         aerial_plus_training_time = aerial_plus.train(lr=config.LEARNING_RATE, epochs=config.EPOCHS,
                                                       batch_size=config.BATCH_SIZE)
         aerial_plus_association_rules, ae_exec_time = aerial_plus.generate_rules()
