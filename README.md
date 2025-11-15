@@ -21,10 +21,11 @@ Please also see the Python library of Aerial+ (PyAerial): [https://github.com/Di
 2. [Datasets](#datasets)
 3. [Baselines](#baselines)
 4. [Code structure](#code-structure)
-5. [How to run?](#how-to-run)
-6. [How to reuse?](#how-to-reuse)
-7. [Citation](#citation)
-8. [References](#references)
+5. [Training Strategy Improvements](#training-strategy-improvements) ⭐ **NEW**
+6. [How to run?](#how-to-run)
+7. [How to reuse?](#how-to-reuse)
+8. [Citation](#citation)
+9. [References](#references)
 
 ## About
 
@@ -101,6 +102,103 @@ the downstream classification experiments:
 - **Parameters**: the parameter settings of the algorithms which are given in Table 2 of our paper can be found and
   updated
   in [config.py](config.py) file.
+
+## Training Strategy Improvements
+
+⭐ **New in this version**: Aerial+ now includes advanced training strategies to improve model convergence and performance:
+
+### Features
+
+1. **Early Stopping (早期終了)**
+   - 検証損失の改善が停止したら訓練を自動的に中断
+   - 過学習を防ぎ、訓練時間を最適化
+   - パラメータ:
+     - `USE_EARLY_STOPPING`: 早期終了の有効化 (デフォルト: `True`)
+     - `EARLY_STOPPING_PATIENCE`: 改善が見られない連続エポック数の閾値 (デフォルト: `10`)
+     - `EARLY_STOPPING_MIN_DELTA`: 改善とみなす最小損失変化 (デフォルト: `1e-4`)
+
+2. **Learning Rate Scheduling (学習率スケジューリング)**
+   - 訓練の進行に応じて学習率を自動調整
+   - 複数のスケジューラタイプをサポート:
+     - `ReduceLROnPlateau`: 検証損失の改善が停滞した際に学習率を削減
+     - `StepLR`: 固定エポック間隔で学習率を削減
+     - `CosineAnnealingLR`: コサイン関数に従って学習率を調整
+   - パラメータ:
+     - `USE_LR_SCHEDULER`: 学習率スケジューリングの有効化 (デフォルト: `True`)
+     - `LR_SCHEDULER_TYPE`: スケジューラタイプ (デフォルト: `"ReduceLROnPlateau"`)
+     - `LR_SCHEDULER_FACTOR`: 学習率を減らす倍率 (デフォルト: `0.5`)
+     - `LR_SCHEDULER_PATIENCE`: 学習率を減らすまでの待機エポック数 (デフォルト: `5`)
+     - `LR_SCHEDULER_MIN_LR`: 最小学習率 (デフォルト: `1e-6`)
+
+3. **Adaptive Batch Size (適応的バッチサイズ)**
+   - 訓練の進行に応じてバッチサイズを段階的に増加
+   - メモリ効率と訓練安定性のバランスを最適化
+   - パラメータ:
+     - `USE_ADAPTIVE_BATCH_SIZE`: 適応的バッチサイズの有効化 (デフォルト: `False`)
+     - `ADAPTIVE_BATCH_SIZE_START`: 開始バッチサイズ (デフォルト: `2`)
+     - `ADAPTIVE_BATCH_SIZE_MAX`: 最大バッチサイズ (デフォルト: `128`)
+     - `ADAPTIVE_BATCH_SIZE_INCREASE_INTERVAL`: バッチサイズを増やすエポック間隔 (デフォルト: `10`)
+
+4. **Training History & Convergence Analysis (訓練履歴と収束曲線の分析)**
+   - 訓練中の損失、学習率、バッチサイズを記録
+   - 収束曲線を自動的に可視化
+   - 訓練履歴をJSONファイルとして保存
+   - パラメータ:
+     - `SAVE_TRAINING_HISTORY`: 訓練履歴の保存 (デフォルト: `True`)
+     - `TRAINING_HISTORY_PATH`: 保存先ディレクトリ (デフォルト: `"training_history"`)
+
+### Configuration
+
+すべてのパラメータは [`config.py`](config.py) で設定可能です:
+
+```python
+# DL-Generic
+EPOCHS = 100  # 最大エポック数（従来は1）
+BATCH_SIZE = 32  # バッチサイズ（従来は2）
+LEARNING_RATE = 5e-3
+
+# Early Stopping
+USE_EARLY_STOPPING = True
+EARLY_STOPPING_PATIENCE = 10
+EARLY_STOPPING_MIN_DELTA = 1e-4
+
+# Learning Rate Scheduling
+USE_LR_SCHEDULER = True
+LR_SCHEDULER_TYPE = "ReduceLROnPlateau"
+LR_SCHEDULER_FACTOR = 0.5
+LR_SCHEDULER_PATIENCE = 5
+LR_SCHEDULER_MIN_LR = 1e-6
+
+# Adaptive Batch Size
+USE_ADAPTIVE_BATCH_SIZE = False
+ADAPTIVE_BATCH_SIZE_START = 2
+ADAPTIVE_BATCH_SIZE_MAX = 128
+
+# Training History
+SAVE_TRAINING_HISTORY = True
+TRAINING_HISTORY_PATH = "training_history"
+```
+
+### Output
+
+訓練履歴が有効な場合、以下のファイルが生成されます:
+
+- `training_history/<dataset_name>/training_history.json`: 詳細な訓練メトリクス
+- `training_history/<dataset_name>/convergence_curves.png`: 収束曲線の可視化
+  - 訓練損失と検証損失の推移
+  - 学習率の推移（対数スケール）
+  - バッチサイズの推移
+  - 損失の対数スケール表示
+
+### Benefits
+
+これらの改善により以下の効果が期待されます:
+
+- ✅ **訓練時間の最適化**: 早期終了により不要な訓練を削減
+- ✅ **性能向上**: 適切な学習率スケジューリングにより収束性能を改善
+- ✅ **過学習の防止**: 検証セットでの早期終了により汎化性能を向上
+- ✅ **トレーサビリティ**: 詳細な訓練履歴により実験の再現性を確保
+- ✅ **ハイパーパラメータ調整の容易化**: 収束曲線の可視化により調整が簡単に
 
 ## How to Run?
 
