@@ -6,6 +6,7 @@ Check out the config.py for the parameters of each algorithm before running
 import pandas
 import config
 import warnings
+import time
 from ucimlrepo import fetch_ucirepo
 
 from src.algorithm.aerial_plus.aerial_plus import AerialPlus
@@ -29,14 +30,14 @@ def get_datasets():
 
     print("LOADING: Loading the datasets ...")
     # breast_cancer = discretize_numerical_features(fetch_ucirepo(id=14))  # low accuracy
-    congress_voting_records = fetch_ucirepo(id=105)
-    # mushroom = fetch_ucirepo(id=73)
+    # congress_voting_records = fetch_ucirepo(id=105)
+    mushroom = fetch_ucirepo(id=73)
     # chess_king_rook_vs_king_pawn = fetch_ucirepo(id=22)  # low accuracy
     # spambase = discretize_numerical_features(fetch_ucirepo(id=94))
 
     datasets += [
-        (congress_voting_records, "Class", {'democrat': 0, 'republican': 1}),
-        # (mushroom, "poisonous", {'e': 0, 'p': 1}),
+        # (congress_voting_records, "Class", {'democrat': 0, 'republican': 1}),
+        (mushroom, "poisonous", {'e': 0, 'p': 1}),
         # (breast_cancer, "Class", {"recurrence-events": 0, "no-recurrence-events": 1}),
         # (chess_king_rook_vs_king_pawn, "wtoeg", {"won": 0, "nowin": 1}),
         # (spambase, "Class", {"0": 0, "1": 1})
@@ -193,16 +194,26 @@ def test_on_corels(dataset, class_label, categories, algorithm):
 
 
 if __name__ == '__main__':
+    # 全体の実行時間を測定開始
+    total_start_time = time.time()
+    
     datasets = get_datasets()
     for (dataset, class_label, categories) in datasets:
+        # データセットごとの実行時間を測定開始
+        dataset_start_time = time.time()
+        
         print("[STARTED] Building classifiers for", dataset.metadata.name, "dataset ...")
-        algorithm = "fpgrowth"
-        print("[CBA] Running the CBA algorithm with FP-Growth.")
-        test_on_cba(dataset, class_label, categories, algorithm)
-        print("[CORELS] Running the CORELS algorithm with FP-Growth.")
-        test_on_corels(dataset, class_label, categories, algorithm)
-        print("[BRL] Running the BRL algorithm with FP-Growth.")
-        test_on_brl(dataset, class_label, categories, algorithm)
+        
+        # FP-Growthアルゴリズム（コメントアウト）
+        # algorithm = "fpgrowth"
+        # print("[CBA] Running the CBA algorithm with FP-Growth.")
+        # test_on_cba(dataset, class_label, categories, algorithm)
+        # print("[CORELS] Running the CORELS algorithm with FP-Growth.")
+        # test_on_corels(dataset, class_label, categories, algorithm)
+        # print("[BRL] Running the BRL algorithm with FP-Growth.")
+        # test_on_brl(dataset, class_label, categories, algorithm)
+        
+        # Aerial+アルゴリズム
         algorithm = "aerial_plus"
         print("[CBA] Running the CBA algorithm with Aerial+.")
         test_on_cba(dataset, class_label, categories, algorithm)
@@ -210,3 +221,14 @@ if __name__ == '__main__':
         test_on_corels(dataset, class_label, categories, algorithm)
         print("[BRL] Running the BRL algorithm with Aerial+.")
         test_on_brl(dataset, class_label, categories, algorithm)
+        
+        # データセットごとの実行時間を表示
+        dataset_elapsed_time = time.time() - dataset_start_time
+        print(f"\n[DATASET COMPLETED] {dataset.metadata.name} - Elapsed time: {dataset_elapsed_time:.2f} seconds ({dataset_elapsed_time/60:.2f} minutes)\n")
+    
+    # 全体の実行時間を表示
+    total_elapsed_time = time.time() - total_start_time
+    print("\n" + "="*80)
+    print(f"[ALL EXPERIMENTS COMPLETED]")
+    print(f"Total elapsed time: {total_elapsed_time:.2f} seconds ({total_elapsed_time/60:.2f} minutes, {total_elapsed_time/3600:.2f} hours)")
+    print("="*80)

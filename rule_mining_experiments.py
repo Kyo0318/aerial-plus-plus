@@ -5,6 +5,7 @@ Check out the config.py for the parameters of each algorithm before running
 import csv
 import warnings
 import config
+import time
 
 from datetime import datetime
 from niapy.algorithms.basic import SineCosineAlgorithm, GreyWolfOptimizer, BatAlgorithm, FishSchoolSearch
@@ -23,13 +24,13 @@ warnings.filterwarnings("ignore")
 
 def get_datasets():
     print("LOADING: Loading the datasets ...")
-    congress_voting_records = fetch_ucirepo(id=105)
+    # congress_voting_records = fetch_ucirepo(id=105)
     # breast_cancer = discretize_numerical_features(fetch_ucirepo(id=14))  # low accuracy
-    # mushroom = fetch_ucirepo(id=73)
+    mushroom = fetch_ucirepo(id=73)
     # chess_king_rook_vs_king_pawn = fetch_ucirepo(id=22)  # low accuracy
     # spambase = discretize_numerical_features(fetch_ucirepo(id=94))
 
-    datasets = [congress_voting_records]
+    datasets = [mushroom]
     print("LOADED: Following dataset(s) are loaded:", ", ".join([dataset.metadata.name for dataset in datasets]), "\n")
     return datasets
 
@@ -83,6 +84,9 @@ def save_results(result_list):
 
 
 if __name__ == "__main__":
+    # 全体の実行時間を測定開始
+    total_start_time = time.time()
+    
     print_parameters()
 
     dataset_list = get_datasets()
@@ -101,6 +105,8 @@ if __name__ == "__main__":
     # fss = OptimizationARM(FishSchoolSearch(config.POPULATION_SIZE), max_evals=config.MAX_EVALS)
 
     for dataset in dataset_list:
+        # データセットごとの実行時間を測定開始
+        dataset_start_time = time.time()
         print("MINING: Mining rules from dataset:", dataset.metadata.name, "...")
         classical_arm_input = prepare_classic_arm_input(dataset.data.features)
         # optimization_based_arm_input = prepare_opt_arm_input(dataset)
@@ -175,4 +181,15 @@ if __name__ == "__main__":
         #     results[dataset.metadata.name]["arm-ae"]["stats"].append(arm_ae_stats)
         #     results[dataset.metadata.name]["arm-ae"]["rules"] = arm_ae_rules
 
+        # データセットごとの実行時間を表示
+        dataset_elapsed_time = time.time() - dataset_start_time
+        print(f"\nDATASET COMPLETED: {dataset.metadata.name} - Elapsed time: {dataset_elapsed_time:.2f} seconds ({dataset_elapsed_time/60:.2f} minutes)\n")
+
     save_results(results)
+    
+    # 全体の実行時間を表示
+    total_elapsed_time = time.time() - total_start_time
+    print("\n" + "="*80)
+    print(f"ALL EXPERIMENTS COMPLETED!")
+    print(f"Total elapsed time: {total_elapsed_time:.2f} seconds ({total_elapsed_time/60:.2f} minutes, {total_elapsed_time/3600:.2f} hours)")
+    print("="*80)
