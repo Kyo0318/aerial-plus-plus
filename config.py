@@ -3,7 +3,7 @@ MAX_ANTECEDENT = 2
 
 # DL-Generic
 EPOCHS = 1
-BATCH_SIZE = 2
+BATCH_SIZE = 2  # GPU使用時はNoneを指定すると自動最適化されます
 LEARNING_RATE = 5e-3
 
 # Exhaustive
