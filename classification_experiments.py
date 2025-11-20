@@ -196,13 +196,16 @@ if __name__ == '__main__':
     datasets = get_datasets()
     for (dataset, class_label, categories) in datasets:
         print("[STARTED] Building classifiers for", dataset.metadata.name, "dataset ...")
-        algorithm = "fpgrowth"
-        print("[CBA] Running the CBA algorithm with FP-Growth.")
-        test_on_cba(dataset, class_label, categories, algorithm)
-        print("[CORELS] Running the CORELS algorithm with FP-Growth.")
-        test_on_corels(dataset, class_label, categories, algorithm)
-        print("[BRL] Running the BRL algorithm with FP-Growth.")
-        test_on_brl(dataset, class_label, categories, algorithm)
+        # FP-Growth experiments (commented out to run only Aerial+ experiments)
+        # algorithm = "fpgrowth"
+        # print("[CBA] Running the CBA algorithm with FP-Growth.")
+        # test_on_cba(dataset, class_label, categories, algorithm)
+        # print("[CORELS] Running the CORELS algorithm with FP-Growth.")
+        # test_on_corels(dataset, class_label, categories, algorithm)
+        # print("[BRL] Running the BRL algorithm with FP-Growth.")
+        # test_on_brl(dataset, class_label, categories, algorithm)
+        
+        # Aerial+ experiments only
         algorithm = "aerial_plus"
         print("[CBA] Running the CBA algorithm with Aerial+.")
         test_on_cba(dataset, class_label, categories, algorithm)

@@ -100,6 +100,8 @@ def generateCARs(transactionDB, algorithm="aerial_plus", target_class=None, supp
         exec_time = aerial_plus_training_time + ae_exec_time
         if rules:
             rules = aerial_plus_to_cba(rules)
+        else:
+            rules = []
     else:
         fpgrowth = ClassicARM(min_support=0.3, min_confidence=0.8, algorithm="fpgrowth")
         fpgrowth_input = prepare_classic_arm_input(transactiondb_to_dataframe(transactionDB))
@@ -207,7 +209,7 @@ def top_rules(transactions,
             rules_current, ae_exec_time = aerial_plus.generate_rules(target_class=target_class)
             rules_current = aerial_plus.calculate_basic_stats(rules_current,
                                                               prepare_classic_arm_input(aerial_plus_input))
-            rules_current = aerial_plus_to_cba(rules_current)
+            rules = aerial_plus_to_cba(rules_current) if rules_current else []
         else:
             fpgrowth = ClassicARM(min_support=0.3, min_confidence=0.8, algorithm="fpgrowth")
             fpgrowth_input = prepare_classic_arm_input(transactiondb_to_dataframe(transactions))
@@ -255,7 +257,10 @@ def top_rules(transactions,
                 logging.debug("All options exhausted")
                 flag = False
 
-    average_support = sum(rule[2] for rule in rules) / len(rules)
-    average_confidence = sum(rule[3] for rule in rules) / len(rules)
+    if rules is None:
+        rules = []
+    
+    average_support = sum(rule[2] for rule in rules) / len(rules) if rules else 0
+    average_confidence = sum(rule[3] for rule in rules) / len(rules) if rules else 0
 
     return rules, [len(rules), average_support, average_confidence]
