@@ -21,18 +21,21 @@ class AutoEncoder(nn.Module):
         hidden_size_1 = int(self.data_size / 2)
         hidden_size_2 = int(self.data_size / 4)
         hidden_size_3 = int(self.data_size / 8)
-        latent_size = max(int(self.data_size / 16), 16)  # Ensure minimum size
+        latent_size = max(int(self.data_size / 8), 16)  # Increased from /16 to /8 to preserve more information
         
-        # Deep encoder with multiple layers and activation functions
+        # Deep encoder with multiple layers, activation functions, and dropout
         self.encoder = nn.Sequential(
             nn.Linear(self.data_size, hidden_size_1),
-            nn.ReLU(),
+            nn.LeakyReLU(0.2),
+            nn.Dropout(0.2),
             nn.LayerNorm(hidden_size_1),
             nn.Linear(hidden_size_1, hidden_size_2),
-            nn.ReLU(),
+            nn.LeakyReLU(0.2),
+            nn.Dropout(0.2),
             nn.LayerNorm(hidden_size_2),
             nn.Linear(hidden_size_2, hidden_size_3),
-            nn.ReLU(),
+            nn.LeakyReLU(0.2),
+            nn.Dropout(0.2),
             nn.LayerNorm(hidden_size_3),
             nn.Linear(hidden_size_3, latent_size),
         )
@@ -40,13 +43,16 @@ class AutoEncoder(nn.Module):
         # Deep decoder with multiple layers and activation functions (symmetric to encoder)
         self.decoder = nn.Sequential(
             nn.Linear(latent_size, hidden_size_3),
-            nn.ReLU(),
+            nn.LeakyReLU(0.2),
+            nn.Dropout(0.2),
             nn.LayerNorm(hidden_size_3),
             nn.Linear(hidden_size_3, hidden_size_2),
-            nn.ReLU(),
+            nn.LeakyReLU(0.2),
+            nn.Dropout(0.2),
             nn.LayerNorm(hidden_size_2),
             nn.Linear(hidden_size_2, hidden_size_1),
-            nn.ReLU(),
+            nn.LeakyReLU(0.2),
+            nn.Dropout(0.2),
             nn.LayerNorm(hidden_size_1),
             nn.Linear(hidden_size_1, self.data_size)
         )
