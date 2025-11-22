@@ -6,7 +6,8 @@ import torch.nn.functional as F
 
 class AutoEncoder(nn.Module):
     """
-    This autoencoder is used to create a numerical representation for the categorical values.
+    This deep autoencoder is used to create a numerical representation for the categorical values.
+    It uses multiple hidden layers for both encoder and decoder to capture complex patterns.
     """
 
     def __init__(self, data_size):
@@ -15,11 +16,45 @@ class AutoEncoder(nn.Module):
         """
         super().__init__()
         self.data_size = data_size
+        
+        # Calculate layer sizes for deep architecture
+        hidden_size_1 = int(self.data_size / 2)
+        hidden_size_2 = int(self.data_size / 4)
+        hidden_size_3 = int(self.data_size / 8)
+        latent_size = max(int(self.data_size / 8), 16)  # Increased from /16 to /8 to preserve more information
+        
+        # Deep encoder with multiple layers, activation functions, and dropout
         self.encoder = nn.Sequential(
-            nn.Linear(self.data_size, int(1 * self.data_size / 2)),
+            nn.Linear(self.data_size, hidden_size_1),
+            nn.LeakyReLU(0.2),
+            nn.Dropout(0.2),
+            nn.LayerNorm(hidden_size_1),
+            nn.Linear(hidden_size_1, hidden_size_2),
+            nn.LeakyReLU(0.2),
+            nn.Dropout(0.2),
+            nn.LayerNorm(hidden_size_2),
+            nn.Linear(hidden_size_2, hidden_size_3),
+            nn.LeakyReLU(0.2),
+            nn.Dropout(0.2),
+            nn.LayerNorm(hidden_size_3),
+            nn.Linear(hidden_size_3, latent_size),
         )
+        
+        # Deep decoder with multiple layers and activation functions (symmetric to encoder)
         self.decoder = nn.Sequential(
-            nn.Linear(int(1 * self.data_size / 2), self.data_size)
+            nn.Linear(latent_size, hidden_size_3),
+            nn.LeakyReLU(0.2),
+            nn.Dropout(0.2),
+            nn.LayerNorm(hidden_size_3),
+            nn.Linear(hidden_size_3, hidden_size_2),
+            nn.LeakyReLU(0.2),
+            nn.Dropout(0.2),
+            nn.LayerNorm(hidden_size_2),
+            nn.Linear(hidden_size_2, hidden_size_1),
+            nn.LeakyReLU(0.2),
+            nn.Dropout(0.2),
+            nn.LayerNorm(hidden_size_1),
+            nn.Linear(hidden_size_1, self.data_size)
         )
 
         self.encoder.apply(self.init_weights)
@@ -30,10 +65,14 @@ class AutoEncoder(nn.Module):
         """
         all weights are initialized with values sampled from uniform distributions with the Xavier initialization
         and the biases are set to 0, as described in the paper by Delong et al. (2023)
+        LayerNorm layers are initialized with default parameters.
         """
         if isinstance(m, nn.Linear):
             torch.nn.init.xavier_uniform_(m.weight)
             m.bias.data.zero_()
+        elif isinstance(m, nn.LayerNorm):
+            nn.init.constant_(m.weight, 1)
+            nn.init.constant_(m.bias, 0)
 
     def save(self, p):
         torch.save(self.encoder.state_dict(), p + 'cat_encoder.pt')

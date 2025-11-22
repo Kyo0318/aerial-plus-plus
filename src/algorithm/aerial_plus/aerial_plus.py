@@ -418,7 +418,7 @@ class AerialPlus:
         """
         Train the autoencoder model with batch normalization, mini-batches, and optimizations.
         """
-        optimizer = torch.optim.Adam(self.model.parameters(), lr=lr, weight_decay=2e-8)
+        optimizer = torch.optim.Adam(self.model.parameters(), lr=lr, weight_decay=1e-5)
 
         vectors_tensor = torch.tensor(self.input_vectors["vector_list"], dtype=torch.float32)
         feature_value_indices = self.input_vectors["feature_value_indices"]
