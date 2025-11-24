@@ -100,6 +100,8 @@ def generateCARs(transactionDB, algorithm="aerial_plus", target_class=None, supp
         exec_time = aerial_plus_training_time + ae_exec_time
         if rules:
             rules = aerial_plus_to_cba(rules)
+        else:
+            rules = []  # Noneの場合は空のリストに
     else:
         fpgrowth = ClassicARM(min_support=0.3, min_confidence=0.8, algorithm="fpgrowth")
         fpgrowth_input = prepare_classic_arm_input(transactiondb_to_dataframe(transactionDB))
@@ -110,6 +112,10 @@ def generateCARs(transactionDB, algorithm="aerial_plus", target_class=None, supp
         ]
         rules = fpgrowth_to_cba(filtered_rules)
 
+    # rulesがNoneの場合の処理を追加
+    if rules is None:
+        rules = []
+    
     average_support = sum(rule[2] for rule in rules) / len(rules) if rules else 0
     average_confidence = sum(rule[3] for rule in rules) / len(rules) if rules else 0
 

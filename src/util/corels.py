@@ -103,6 +103,10 @@ def parse_corels_rule_lists(rule_list_model_in_text):
 
 
 def test_corels_model(model, test_X, test_y):
+    # modelがNoneの場合（CORLESが失敗した場合）
+    if model is None:
+        return 0.0
+    
     test_X.reset_index(drop=True, inplace=True)
     test_y.reset_index(drop=True, inplace=True)
 
