@@ -296,6 +296,10 @@ class AerialPlus:
         :param transactions: List of transactions.
         :return: Updated rules with support and confidence.
         """
+        # Handle empty rules case
+        if not rules:
+            return []
+        
         num_transactions = len(transactions)
 
         def process_rule(rule):
@@ -326,7 +330,7 @@ class AerialPlus:
         with ThreadPoolExecutor(max_workers=10) as executor:
             rules = list(executor.map(process_rule, rules))
 
-        return rules if rules else None
+        return rules
 
     @staticmethod
     def calculate_freq_item_support(freq_items, transactions):
@@ -349,6 +353,10 @@ class AerialPlus:
         """
         Calculate rule quality stats for the given set of rules based on the input transactions.
         """
+        # Handle empty rules case
+        if not rules:
+            return [0, exec_time, 0.0, 0.0, 0.0], []
+        
         num_transactions = len(transactions)
         vector_list = np.array(self.input_vectors['vector_list'])
         vector_tracker_list = self.input_vectors['vector_tracker_list']
@@ -385,7 +393,7 @@ class AerialPlus:
             updated_rules.append(rule)
 
         if not updated_rules:
-            return None
+            return [0, exec_time, 0.0, 0.0, 0.0], []
 
         stats = calculate_average_rule_quality(updated_rules)
         stats["coverage"] = np.sum(dataset_coverage) / num_transactions
@@ -416,7 +424,7 @@ class AerialPlus:
 
     def train_ae_model(self, loss_function=torch.nn.BCELoss(), lr=5e-3, epochs=1, batch_size=2):
         """
-        Train the autoencoder model with batch normalization, mini-batches, and optimizations.
+        Train the sparse autoencoder model with KL divergence sparsity constraint.
         """
         optimizer = torch.optim.Adam(self.model.parameters(), lr=lr, weight_decay=2e-8)
 
@@ -436,14 +444,20 @@ class AerialPlus:
                 # Forward pass
                 reconstructed_batch = self.model(noisy_batch, softmax_ranges)
 
-                # Compute loss for the entire batch
-                total_loss = sum(
+                # Compute reconstruction loss for the entire batch
+                reconstruction_loss = sum(
                     loss_function(
                         reconstructed_batch[:, start:end],
                         batch[:, start:end]
                     )
                     for (start, end) in softmax_ranges
                 )
+                
+                # Add sparsity constraint (KL divergence loss)
+                sparsity_loss = self.model.kl_divergence_loss()
+                
+                # Total loss = reconstruction loss + β * sparsity loss
+                total_loss = reconstruction_loss + self.model.beta * sparsity_loss
 
                 # Backpropagation and optimization step
                 optimizer.zero_grad()
