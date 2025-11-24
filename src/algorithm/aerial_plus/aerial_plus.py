@@ -20,18 +20,25 @@ class AerialPlus:
     Neurosymbolic association rule mining from tabular data
     """
 
-    def __init__(self, noise_factor=0.5, cons_similarity=0.8, ant_similarity=0.5, max_antecedents=2):
+    def __init__(self, noise_factor=0.5, cons_similarity=0.8, ant_similarity=0.5, max_antecedents=2, device=None):
         """
         @param cons_similarity: consequent similarity threshold
         @param ant_similarity: antecedent similarity threshold
         @param noise_factor: amount of noise introduced for the one-hot encoded input of denoising Autoencoder
         @param max_antecedents: maximum number of antecedents that the learned rules will have
+        @param device: torch device (cuda/cpu)
         """
         self.noise_factor = noise_factor
         self.cons_similarity = cons_similarity
         self.ant_similarity = ant_similarity
         self.max_antecedents = max_antecedents
 
+        # GPU対応
+        if device is None:
+            self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        else:
+            self.device = device
+        
         self.model = None
         self.input_vectors = None
         self.softmax = nn.Softmax(dim=0)
@@ -143,11 +150,12 @@ class AerialPlus:
                     batch_candidate_antecedent_list.extend(candidate_antecedent_list)
 
             if batch_vectors:
-                batch_vectors = torch.tensor(np.array(batch_vectors), dtype=torch.float32)
+                batch_vectors = torch.tensor(np.array(batch_vectors), dtype=torch.float32).to(self.device)
                 # Perform a single model evaluation for the batch
-                implications_batch = self.model(batch_vectors, feature_value_indices).detach().numpy()
+                implications_batch = self.model(batch_vectors, feature_value_indices).detach().cpu().numpy()
+                batch_vectors_cpu = batch_vectors.cpu()
                 for test_vector, implication_probabilities, candidate_antecedents \
-                        in zip(batch_vectors, implications_batch, batch_candidate_antecedent_list):
+                        in zip(batch_vectors_cpu, implications_batch, batch_candidate_antecedent_list):
                     if len(candidate_antecedents) == 0:
                         continue
 
@@ -217,11 +225,12 @@ class AerialPlus:
                     batch_vectors.extend(test_vectors)
                     batch_candidate_antecedent_list.extend(candidate_antecedent_list)
             if batch_vectors:
-                batch_vectors = torch.tensor(np.array(batch_vectors), dtype=torch.float32)
+                batch_vectors = torch.tensor(np.array(batch_vectors), dtype=torch.float32).to(self.device)
                 # Perform a single model evaluation for the batch
-                implications_batch = self.model(batch_vectors, feature_value_indices).detach().numpy()
+                implications_batch = self.model(batch_vectors, feature_value_indices).detach().cpu().numpy()
+                batch_vectors_cpu = batch_vectors.cpu()
                 for test_vector, implication_probabilities, candidate_antecedents \
-                        in zip(batch_vectors, implications_batch, batch_candidate_antecedent_list):
+                        in zip(batch_vectors_cpu, implications_batch, batch_candidate_antecedent_list):
                     if len(candidate_antecedents) == 0:
                         continue
 
@@ -407,7 +416,7 @@ class AerialPlus:
         train the autoencoder
         """
         # pretrain categorical attributes from the knowledge graph, to create a numerical representation for them
-        self.model = AutoEncoder(len(self.input_vectors['vector_list'][0]))
+        self.model = AutoEncoder(len(self.input_vectors['vector_list'][0]), device=self.device)
 
         # if not self.model.load("test"):
         training_time = self.train_ae_model(lr=lr, epochs=epochs, batch_size=batch_size)
@@ -417,20 +426,27 @@ class AerialPlus:
     def train_ae_model(self, loss_function=torch.nn.BCELoss(), lr=5e-3, epochs=1, batch_size=2):
         """
         Train the autoencoder model with batch normalization, mini-batches, and optimizations.
+        GPU対応版
         """
         optimizer = torch.optim.Adam(self.model.parameters(), lr=lr, weight_decay=1e-5)
 
+        # データはCPUに保持し、DataLoaderでpin_memoryを使用
         vectors_tensor = torch.tensor(self.input_vectors["vector_list"], dtype=torch.float32)
         feature_value_indices = self.input_vectors["feature_value_indices"]
         dataset = TensorDataset(vectors_tensor)
-        dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
+        # pin_memoryはGPU使用時のみ有効化（CPUテンソルのみpin可能）
+        dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True, 
+                               num_workers=0, pin_memory=(self.device.type == 'cuda'))
 
         softmax_ranges = [(cat['start'], cat['end']) for cat in feature_value_indices]
 
         training_start_time = time.time()
+        self.model.train()  # トレーニングモードに設定
         for epoch in range(epochs):
             # print(f"Epoch {epoch + 1}/{epochs}")
             for batch_index, (batch,) in enumerate(dataloader):
+                # バッチをGPU/CPUに移動（non_blockingで高速化）
+                batch = batch.to(self.device, non_blocking=True)
                 noisy_batch = (batch + torch.randn_like(batch) * self.noise_factor).clamp(0, 1)
 
                 # Forward pass
@@ -449,6 +465,8 @@ class AerialPlus:
                 optimizer.zero_grad()
                 total_loss.backward()
                 optimizer.step()
+        
+        self.model.eval()  # 評価モードに設定
 
         training_time = time.time() - training_start_time
         return training_time

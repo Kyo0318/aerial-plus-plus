@@ -10,12 +10,19 @@ class AutoEncoder(nn.Module):
     It uses multiple hidden layers for both encoder and decoder to capture complex patterns.
     """
 
-    def __init__(self, data_size):
+    def __init__(self, data_size, device=None):
         """
         :param data_size: size of the categorical features in the knowledge graph, after one-hot encoding
+        :param device: torch device (cuda/cpu)
         """
         super().__init__()
         self.data_size = data_size
+        
+        # GPU対応：利用可能な場合は自動的にGPUを使用
+        if device is None:
+            self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        else:
+            self.device = device
         
         # Calculate layer sizes for deep architecture
         hidden_size_1 = int(self.data_size / 2)
@@ -59,6 +66,9 @@ class AutoEncoder(nn.Module):
 
         self.encoder.apply(self.init_weights)
         self.decoder.apply(self.init_weights)
+        
+        # モデルをGPU/CPUに移動
+        self.to(self.device)
 
     @staticmethod
     def init_weights(m):
@@ -80,8 +90,8 @@ class AutoEncoder(nn.Module):
 
     def load(self, p):
         if os.path.isfile(p + 'cat_encoder.pt') and os.path.isfile(p + 'cat_decoder.pt'):
-            self.encoder.load_state_dict(torch.load(p + 'cat_encoder.pt'))
-            self.decoder.load_state_dict(torch.load(p + 'cat_decoder.pt'))
+            self.encoder.load_state_dict(torch.load(p + 'cat_encoder.pt', map_location=self.device))
+            self.decoder.load_state_dict(torch.load(p + 'cat_decoder.pt', map_location=self.device))
             self.encoder.eval()
             self.decoder.eval()
             return True
