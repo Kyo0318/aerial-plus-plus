@@ -100,6 +100,8 @@ def generateCARs(transactionDB, algorithm="aerial_plus", target_class=None, supp
         exec_time = aerial_plus_training_time + ae_exec_time
         if rules:
             rules = aerial_plus_to_cba(rules)
+        else:
+            rules = []
     else:
         fpgrowth = ClassicARM(min_support=0.3, min_confidence=0.8, algorithm="fpgrowth")
         fpgrowth_input = prepare_classic_arm_input(transactiondb_to_dataframe(transactionDB))

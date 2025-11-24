@@ -23,13 +23,13 @@ warnings.filterwarnings("ignore")
 
 def get_datasets():
     print("LOADING: Loading the datasets ...")
-    congress_voting_records = fetch_ucirepo(id=105)
-    # breast_cancer = discretize_numerical_features(fetch_ucirepo(id=14))  # low accuracy
+    # congress_voting_records = fetch_ucirepo(id=105)
+    breast_cancer = discretize_numerical_features(fetch_ucirepo(id=14))  # low accuracy
     # mushroom = fetch_ucirepo(id=73)
     # chess_king_rook_vs_king_pawn = fetch_ucirepo(id=22)  # low accuracy
     # spambase = discretize_numerical_features(fetch_ucirepo(id=94))
 
-    datasets = [congress_voting_records]
+    datasets = [breast_cancer]
     print("LOADED: Following dataset(s) are loaded:", ", ".join([dataset.metadata.name for dataset in datasets]), "\n")
     return datasets
 
