@@ -431,7 +431,10 @@ class AerialPlus:
         for epoch in range(epochs):
             # print(f"Epoch {epoch + 1}/{epochs}")
             for batch_index, (batch,) in enumerate(dataloader):
-                noisy_batch = (batch + torch.randn_like(batch) * self.noise_factor).clamp(0, 1)
+                # Drop each feature independently with probability = noise_factor
+                keep_prob = max(0.0, min(1.0, 1 - self.noise_factor))
+                drop_mask = torch.bernoulli(torch.full_like(batch, keep_prob))
+                noisy_batch = batch * drop_mask
 
                 # Forward pass
                 reconstructed_batch = self.model(noisy_batch, softmax_ranges)
