@@ -145,7 +145,8 @@ class AerialPlus:
             if batch_vectors:
                 batch_vectors = torch.tensor(np.array(batch_vectors), dtype=torch.float32)
                 # Perform a single model evaluation for the batch
-                implications_batch = self.model(batch_vectors, feature_value_indices).detach().numpy()
+                # VAE returns (reconstructed, mean, logvar), we only need the reconstructed output
+                implications_batch = self.model(batch_vectors, feature_value_indices)[0].detach().numpy()
                 for test_vector, implication_probabilities, candidate_antecedents \
                         in zip(batch_vectors, implications_batch, batch_candidate_antecedent_list):
                     if len(candidate_antecedents) == 0:
@@ -219,7 +220,8 @@ class AerialPlus:
             if batch_vectors:
                 batch_vectors = torch.tensor(np.array(batch_vectors), dtype=torch.float32)
                 # Perform a single model evaluation for the batch
-                implications_batch = self.model(batch_vectors, feature_value_indices).detach().numpy()
+                # VAE returns (reconstructed, mean, logvar), we only need the reconstructed output
+                implications_batch = self.model(batch_vectors, feature_value_indices)[0].detach().numpy()
                 for test_vector, implication_probabilities, candidate_antecedents \
                         in zip(batch_vectors, implications_batch, batch_candidate_antecedent_list):
                     if len(candidate_antecedents) == 0:
@@ -414,11 +416,17 @@ class AerialPlus:
         # self.model.save("test")
         return training_time
 
-    def train_ae_model(self, loss_function=torch.nn.BCELoss(), lr=5e-3, epochs=1, batch_size=2):
+    def train_ae_model(self, loss_function=torch.nn.BCELoss(), lr=5e-3, epochs=1, batch_size=2, beta=0.01):
         """
-        Train the autoencoder model with batch normalization, mini-batches, and optimizations.
+        Train the variational autoencoder model with KL divergence regularization.
+        :param loss_function: Reconstruction loss function (default: BCELoss)
+        :param lr: Learning rate
+        :param epochs: Number of training epochs
+        :param batch_size: Batch size
+        :param beta: Weight for KL divergence loss (default: 0.01, start small to avoid posterior collapse)
         """
-        optimizer = torch.optim.Adam(self.model.parameters(), lr=lr, weight_decay=2e-8)
+        # weight_decay is removed/weakened as it can conflict with VAE regularization
+        optimizer = torch.optim.Adam(self.model.parameters(), lr=lr)
 
         vectors_tensor = torch.tensor(self.input_vectors["vector_list"], dtype=torch.float32)
         feature_value_indices = self.input_vectors["feature_value_indices"]
@@ -431,19 +439,26 @@ class AerialPlus:
         for epoch in range(epochs):
             # print(f"Epoch {epoch + 1}/{epochs}")
             for batch_index, (batch,) in enumerate(dataloader):
+                # VAE has inherent noise tolerance, but denoising can still be beneficial
                 noisy_batch = (batch + torch.randn_like(batch) * self.noise_factor).clamp(0, 1)
 
-                # Forward pass
-                reconstructed_batch = self.model(noisy_batch, softmax_ranges)
+                # Forward pass: VAE returns (reconstructed, mean, logvar)
+                reconstructed_batch, mean, logvar = self.model(noisy_batch, softmax_ranges)
 
-                # Compute loss for the entire batch
-                total_loss = sum(
+                # Reconstruction Loss (BCE)
+                recon_loss = sum(
                     loss_function(
                         reconstructed_batch[:, start:end],
                         batch[:, start:end]
                     )
                     for (start, end) in softmax_ranges
                 )
+
+                # KL Divergence Loss
+                kl_loss = self.model.compute_kl_loss(mean, logvar)
+
+                # Total loss = Reconstruction loss + beta * KL loss
+                total_loss = recon_loss + beta * kl_loss
 
                 # Backpropagation and optimization step
                 optimizer.zero_grad()
