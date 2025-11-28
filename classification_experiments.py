@@ -28,16 +28,16 @@ def get_datasets():
     datasets = []
 
     print("LOADING: Loading the datasets ...")
-    breast_cancer = discretize_numerical_features(fetch_ucirepo(id=14))  # low accuracy
-    # congress_voting_records = fetch_ucirepo(id=105)
+    # breast_cancer = discretize_numerical_features(fetch_ucirepo(id=14))  # low accuracy
+    congress_voting_records = fetch_ucirepo(id=105)
     # mushroom = fetch_ucirepo(id=73)
     # chess_king_rook_vs_king_pawn = fetch_ucirepo(id=22)  # low accuracy
     # spambase = discretize_numerical_features(fetch_ucirepo(id=94))
 
     datasets += [
-        # (congress_voting_records, "Class", {'democrat': 0, 'republican': 1}),
+        (congress_voting_records, "Class", {'democrat': 0, 'republican': 1}),
         # (mushroom, "poisonous", {'e': 0, 'p': 1}),
-        (breast_cancer, "Class", {"recurrence-events": 0, "no-recurrence-events": 1}),
+        # (breast_cancer, "Class", {"recurrence-events": 0, "no-recurrence-events": 1}),
         # (chess_king_rook_vs_king_pawn, "wtoeg", {"won": 0, "nowin": 1}),
         # (spambase, "Class", {"0": 0, "1": 1})
     ]

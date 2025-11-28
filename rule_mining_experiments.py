@@ -7,14 +7,14 @@ import warnings
 import config
 
 from datetime import datetime
-from niapy.algorithms.basic import SineCosineAlgorithm, GreyWolfOptimizer, BatAlgorithm, FishSchoolSearch
+# from niapy.algorithms.basic import SineCosineAlgorithm, GreyWolfOptimizer, BatAlgorithm, FishSchoolSearch
 
 from ucimlrepo import fetch_ucirepo
 
-from src.algorithm.classic_arm import ClassicARM
+# from src.algorithm.classic_arm import ClassicARM
 from src.algorithm.aerial_plus.aerial_plus import AerialPlus
-from src.algorithm.arm_ae.armae import ARMAE
-from src.algorithm.optimization_arm import OptimizationARM
+# from src.algorithm.arm_ae.armae import ARMAE
+# from src.algorithm.optimization_arm import OptimizationARM
 from src.util.ucimlrepo import *
 
 # todo: resolve the warnings
@@ -23,13 +23,13 @@ warnings.filterwarnings("ignore")
 
 def get_datasets():
     print("LOADING: Loading the datasets ...")
-    # congress_voting_records = fetch_ucirepo(id=105)
-    breast_cancer = discretize_numerical_features(fetch_ucirepo(id=14))  # low accuracy
+    congress_voting_records = fetch_ucirepo(id=105)
+    # breast_cancer = discretize_numerical_features(fetch_ucirepo(id=14))  # low accuracy
     # mushroom = fetch_ucirepo(id=73)
     # chess_king_rook_vs_king_pawn = fetch_ucirepo(id=22)  # low accuracy
     # spambase = discretize_numerical_features(fetch_ucirepo(id=94))
 
-    datasets = [breast_cancer]
+    datasets = [congress_voting_records]
     print("LOADED: Following dataset(s) are loaded:", ", ".join([dataset.metadata.name for dataset in datasets]), "\n")
     return datasets
 
@@ -88,64 +88,64 @@ if __name__ == "__main__":
     dataset_list = get_datasets()
     results = {}
 
-    fpgrowth = ClassicARM(min_support=config.MIN_SUPPORT, min_confidence=config.MIN_CONFIDENCE,
-                          algorithm="fpgrowth")
-    hmine = ClassicARM(min_support=config.MIN_SUPPORT, min_confidence=config.MIN_CONFIDENCE, algorithm="hmine")
+    # fpgrowth = ClassicARM(min_support=config.MIN_SUPPORT, min_confidence=config.MIN_CONFIDENCE,
+    #                       algorithm="fpgrowth")
+    # hmine = ClassicARM(min_support=config.MIN_SUPPORT, min_confidence=config.MIN_CONFIDENCE, algorithm="hmine")
 
     aerial_plus = AerialPlus(max_antecedents=config.MAX_ANTECEDENT, ant_similarity=config.ANTECEDENT_SIMILARITY,
                              cons_similarity=config.CONSEQUENT_SIMILARITY)
-    sc = OptimizationARM(SineCosineAlgorithm(config.POPULATION_SIZE), max_evals=config.MAX_EVALS)
-    gwo = OptimizationARM(GreyWolfOptimizer(config.POPULATION_SIZE), max_evals=config.MAX_EVALS)
-    bat = OptimizationARM(BatAlgorithm(config.POPULATION_SIZE), max_evals=config.MAX_EVALS)
-    fss = OptimizationARM(FishSchoolSearch(config.POPULATION_SIZE), max_evals=config.MAX_EVALS)
+    # sc = OptimizationARM(SineCosineAlgorithm(config.POPULATION_SIZE), max_evals=config.MAX_EVALS)
+    # gwo = OptimizationARM(GreyWolfOptimizer(config.POPULATION_SIZE), max_evals=config.MAX_EVALS)
+    # bat = OptimizationARM(BatAlgorithm(config.POPULATION_SIZE), max_evals=config.MAX_EVALS)
+    # fss = OptimizationARM(FishSchoolSearch(config.POPULATION_SIZE), max_evals=config.MAX_EVALS)
 
     for dataset in dataset_list:
         print("MINING: Mining rules from dataset:", dataset.metadata.name, "...")
         classical_arm_input = prepare_classic_arm_input(dataset.data.features)
-        optimization_based_arm_input = prepare_opt_arm_input(dataset)
+        # optimization_based_arm_input = prepare_opt_arm_input(dataset)
 
         results[dataset.metadata.name] = {}
-        results[dataset.metadata.name]["bat"] = {"stats": [], "rules": None}
-        results[dataset.metadata.name]["gwo"] = {"stats": [], "rules": None}
-        results[dataset.metadata.name]["sc"] = {"stats": [], "rules": None}
-        results[dataset.metadata.name]["fss"] = {"stats": [], "rules": None}
-        results[dataset.metadata.name]["fpgrowth"] = {"stats": [], "rules": None}
-        results[dataset.metadata.name]["hmine"] = {"stats": [], "rules": None}
-        results[dataset.metadata.name]["arm-ae"] = {"stats": [], "rules": None}
+        # results[dataset.metadata.name]["bat"] = {"stats": [], "rules": None}
+        # results[dataset.metadata.name]["gwo"] = {"stats": [], "rules": None}
+        # results[dataset.metadata.name]["sc"] = {"stats": [], "rules": None}
+        # results[dataset.metadata.name]["fss"] = {"stats": [], "rules": None}
+        # results[dataset.metadata.name]["fpgrowth"] = {"stats": [], "rules": None}
+        # results[dataset.metadata.name]["hmine"] = {"stats": [], "rules": None}
+        # results[dataset.metadata.name]["arm-ae"] = {"stats": [], "rules": None}
         results[dataset.metadata.name]["aerial_plus"] = {"stats": [], "rules": None}
 
         # exhaustive ARM
-        fpgrowth_stats, fpgrowth_rules = fpgrowth.mine_rules(classical_arm_input)
-        if fpgrowth_stats:
-            results[dataset.metadata.name]["fpgrowth"]["stats"].append(fpgrowth_stats)
-            results[dataset.metadata.name]["fpgrowth"]["rules"] = fpgrowth_rules
-            print_stats(fpgrowth_stats, "FP-Growth")
-        hmine_stats, hmine_rules = hmine.mine_rules(classical_arm_input)
-        if hmine_stats:
-            results[dataset.metadata.name]["hmine"]["stats"].append(hmine_stats)
-            results[dataset.metadata.name]["hmine"]["rules"] = hmine_rules
-            print_stats(hmine_stats, "HMine")
+        # fpgrowth_stats, fpgrowth_rules = fpgrowth.mine_rules(classical_arm_input)
+        # if fpgrowth_stats:
+        #     results[dataset.metadata.name]["fpgrowth"]["stats"].append(fpgrowth_stats)
+        #     results[dataset.metadata.name]["fpgrowth"]["rules"] = fpgrowth_rules
+        #     print_stats(fpgrowth_stats, "FP-Growth")
+        # hmine_stats, hmine_rules = hmine.mine_rules(classical_arm_input)
+        # if hmine_stats:
+        #     results[dataset.metadata.name]["hmine"]["stats"].append(hmine_stats)
+        #     results[dataset.metadata.name]["hmine"]["rules"] = hmine_rules
+        #     print_stats(hmine_stats, "HMine")
 
         # optimization-based ARM
-        sc_stats, sc_rules = sc.learn_rules(optimization_based_arm_input)
-        results[dataset.metadata.name]["sc"]["stats"].append(sc_stats)
-        results[dataset.metadata.name]["sc"]["rules"] = sc_rules
-        print_stats(sc_stats, "Sine Cosine Algorithm")
+        # sc_stats, sc_rules = sc.learn_rules(optimization_based_arm_input)
+        # results[dataset.metadata.name]["sc"]["stats"].append(sc_stats)
+        # results[dataset.metadata.name]["sc"]["rules"] = sc_rules
+        # print_stats(sc_stats, "Sine Cosine Algorithm")
 
-        gwo_stats, gwo_rules = gwo.learn_rules(optimization_based_arm_input)
-        results[dataset.metadata.name]["gwo"]["stats"].append(gwo_stats)
-        results[dataset.metadata.name]["gwo"]["rules"] = gwo_rules
-        print_stats(gwo_stats, "Grey Wolf Optimizer")
+        # gwo_stats, gwo_rules = gwo.learn_rules(optimization_based_arm_input)
+        # results[dataset.metadata.name]["gwo"]["stats"].append(gwo_stats)
+        # results[dataset.metadata.name]["gwo"]["rules"] = gwo_rules
+        # print_stats(gwo_stats, "Grey Wolf Optimizer")
 
-        bat_stats, bat_rules = bat.learn_rules(optimization_based_arm_input)
-        results[dataset.metadata.name]["bat"]["stats"].append(bat_stats)
-        results[dataset.metadata.name]["bat"]["rules"] = bat_rules
-        print_stats(bat_stats, "Bat Algorithm")
+        # bat_stats, bat_rules = bat.learn_rules(optimization_based_arm_input)
+        # results[dataset.metadata.name]["bat"]["stats"].append(bat_stats)
+        # results[dataset.metadata.name]["bat"]["rules"] = bat_rules
+        # print_stats(bat_stats, "Bat Algorithm")
 
-        fss_stats, fss_rules = fss.learn_rules(optimization_based_arm_input)
-        results[dataset.metadata.name]["fss"]["stats"].append(fss_stats)
-        results[dataset.metadata.name]["fss"]["rules"] = fss_rules
-        print_stats(fss_stats, "Fish School Search Algorithm")
+        # fss_stats, fss_rules = fss.learn_rules(optimization_based_arm_input)
+        # results[dataset.metadata.name]["fss"]["stats"].append(fss_stats)
+        # results[dataset.metadata.name]["fss"]["rules"] = fss_rules
+        # print_stats(fss_stats, "Fish School Search Algorithm")
 
         # aerial_plus+ (2025)
         aerial_plus.create_input_vectors(dataset.data.features)
@@ -160,18 +160,18 @@ if __name__ == "__main__":
             results[dataset.metadata.name]["aerial_plus"]["rules"] = aerial_plus_association_rules
 
         # ARM-AE from Berteloot et al. (2024)
-        one_hot_encoded = one_hot_encoding(classical_arm_input)
-        arm_ae = ARMAE(len(one_hot_encoded.loc[0]), maxEpoch=config.EPOCHS, batchSize=config.BATCH_SIZE,
-                       learningRate=config.LEARNING_RATE, likeness=config.SIMILARITY_THRESHOLD)
-        dataLoader = arm_ae.dataPreprocessing(one_hot_encoded)
-        arm_ae_training_time = arm_ae.train(dataLoader)
-        # numberOfRules per consequent is adjusted to approximate aerial_plus+
-        arm_ae.generateRules(one_hot_encoded,
-                             numberOfRules=max(int(len(aerial_plus_association_rules) / one_hot_encoded.shape[1]), 2),
-                             nbAntecedent=config.MAX_ANTECEDENT)
-        arm_ae_stats, arm_ae_rules = arm_ae.reformat_rules(classical_arm_input, list(one_hot_encoded.columns))
-        if arm_ae_stats:
-            results[dataset.metadata.name]["arm-ae"]["stats"].append(arm_ae_stats)
-            results[dataset.metadata.name]["arm-ae"]["rules"] = arm_ae_rules
+        # one_hot_encoded = one_hot_encoding(classical_arm_input)
+        # arm_ae = ARMAE(len(one_hot_encoded.loc[0]), maxEpoch=config.EPOCHS, batchSize=config.BATCH_SIZE,
+        #                learningRate=config.LEARNING_RATE, likeness=config.SIMILARITY_THRESHOLD)
+        # dataLoader = arm_ae.dataPreprocessing(one_hot_encoded)
+        # arm_ae_training_time = arm_ae.train(dataLoader)
+        # # numberOfRules per consequent is adjusted to approximate aerial_plus+
+        # arm_ae.generateRules(one_hot_encoded,
+        #                      numberOfRules=max(int(len(aerial_plus_association_rules) / one_hot_encoded.shape[1]), 2),
+        #                      nbAntecedent=config.MAX_ANTECEDENT)
+        # arm_ae_stats, arm_ae_rules = arm_ae.reformat_rules(classical_arm_input, list(one_hot_encoded.columns))
+        # if arm_ae_stats:
+        #     results[dataset.metadata.name]["arm-ae"]["stats"].append(arm_ae_stats)
+        #     results[dataset.metadata.name]["arm-ae"]["rules"] = arm_ae_rules
 
     save_results(results)

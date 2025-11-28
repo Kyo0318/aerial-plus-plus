@@ -6,6 +6,7 @@ from itertools import combinations
 from torch import nn
 from torch.utils.data import TensorDataset, DataLoader
 
+# src.algorithm.aerial_plus.autoencoder が Transformer版に置き換わっている前提です
 from src.algorithm.aerial_plus.autoencoder import AutoEncoder
 from src.util.ucimlrepo import *
 from src.util.rule_quality import *
@@ -37,6 +38,7 @@ class AerialPlus:
         self.softmax = nn.Softmax(dim=0)
 
     def create_input_vectors(self, transactions):
+        # ... (変更なし) ...
         """
         Create input vectors for training the Autoencoder in a one-hot encoded form.
         :param transactions: pandas DataFrame of transactions
@@ -92,6 +94,8 @@ class AerialPlus:
         }
 
     def generate_rules(self, target_class=None):
+        # ... (変更なし) ...
+        # model呼び出し部分はAutoEncoderのforwardの引数と互換性があるため変更不要です
         """
         generate rules using Aerial+ algorithm
         @param target_class: if given a target class, generate rules with the target class on the right hand side only
@@ -173,6 +177,7 @@ class AerialPlus:
         return association_rules, execution_time
 
     def generate_frequent_itemsets(self):
+        # ... (変更なし) ...
         """
         Generate frequent itemsets using the Aerial+ algorithm.
         """
@@ -240,6 +245,7 @@ class AerialPlus:
 
     @staticmethod
     def mark_features(unmarked_test_vector, features, low_support_antecedents):
+        # ... (変更なし) ...
         """
         Create a list of test vectors by marking the given features in the unmarked test vector.
         This optimized version processes features in bulk using NumPy operations.
@@ -280,6 +286,7 @@ class AerialPlus:
 
     @staticmethod
     def initialize_input_vectors(input_vector_size, categories):
+        # ... (変更なし) ...
         """
         Initialize the input vectors with equal probabilities for each feature range.
         """
@@ -290,6 +297,7 @@ class AerialPlus:
         return vector_with_unmarked_features
 
     def calculate_basic_stats(self, rules, transactions):
+        # ... (変更なし) ...
         """
         Calculate support and confidence in parallel.
         :param rules: List of rules to process.
@@ -330,6 +338,7 @@ class AerialPlus:
 
     @staticmethod
     def calculate_freq_item_support(freq_items, transactions):
+        # ... (変更なし) ...
         num_rows = len(transactions)
         support_values = {}
 
@@ -346,6 +355,7 @@ class AerialPlus:
         return support_values, average_support
 
     def calculate_stats(self, rules, transactions, exec_time):
+        # ... (変更なし) ...
         """
         Calculate rule quality stats for the given set of rules based on the input transactions.
         """
@@ -393,6 +403,7 @@ class AerialPlus:
         return [len(updated_rules), exec_time, stats['support'], stats["confidence"], stats["coverage"]], updated_rules
 
     def get_rule(self, antecedents, consequents):
+        # ... (変更なし) ...
         rule = {'antecedents': [], 'consequents': []}
         for antecedent in antecedents:
             rule['antecedents'].append(self.input_vectors['vector_tracker_list'][antecedent])
@@ -402,12 +413,28 @@ class AerialPlus:
 
         return rule
 
-    def train(self, lr=5e-3, epochs=1, batch_size=2):
+    def train(self, lr=5e-3, epochs=1, batch_size=2, d_model=32, nhead=4, num_layers=2):
         """
-        train the autoencoder
+        train the autoencoder (Transformer-based)
+        @param d_model: Dimension of the transformer embeddings
+        @param nhead: Number of heads in the multiheadattention
+        @param num_layers: Number of transformer encoder layers
         """
-        # pretrain categorical attributes from the knowledge graph, to create a numerical representation for them
-        self.model = AutoEncoder(len(self.input_vectors['vector_list'][0]))
+        # 修正箇所: Transformer AEの初期化に必要な「各特徴量のインデックス範囲」を作成します。
+        # self.input_vectors['feature_value_indices'] は以下のような辞書リストです:
+        # [{'feature': 'A', 'start': 0, 'end': 3}, ...]
+        # これを [(0, 3), ...] のようなタプルのリストに変換します。
+        feature_indices_dict = self.input_vectors['feature_value_indices']
+        input_vector_category_indices = [(item['start'], item['end']) for item in feature_indices_dict]
+
+        # TransformerベースのAutoEncoderをインスタンス化
+        # input_vector_category_indicesを渡します
+        self.model = AutoEncoder(
+            input_vector_category_indices=input_vector_category_indices,
+            d_model=d_model,
+            nhead=nhead,
+            num_layers=num_layers
+        )
 
         # if not self.model.load("test"):
         training_time = self.train_ae_model(lr=lr, epochs=epochs, batch_size=batch_size)
@@ -415,6 +442,8 @@ class AerialPlus:
         return training_time
 
     def train_ae_model(self, loss_function=torch.nn.BCELoss(), lr=5e-3, epochs=1, batch_size=2):
+        # ... (変更なし) ...
+        # model(...) の呼び出し規約は新しいAEのforward(x, indices)と互換性があるため、そのままで動作します。
         """
         Train the autoencoder model with batch normalization, mini-batches, and optimizations.
         """
@@ -434,6 +463,7 @@ class AerialPlus:
                 noisy_batch = (batch + torch.randn_like(batch) * self.noise_factor).clamp(0, 1)
 
                 # Forward pass
+                # Transformer AEのforward(x, indices) と引数が一致するためそのまま使えます
                 reconstructed_batch = self.model(noisy_batch, softmax_ranges)
 
                 # Compute loss for the entire batch
